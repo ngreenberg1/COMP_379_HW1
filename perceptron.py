@@ -2,105 +2,91 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
+def initialize_weights(n_features):
+    return np.random.randn(n_features)
 
-def step_function(x):
-    return np.where(x > 0, 1, -1)
+def predict(weights, X):
+    net_input = np.dot(X, weights)
+    return np.where(net_input >= 0.0, 1, -1)
 
-class Perceptron(object):
-    
-    #constructor
-    def __init__(self, learning_rate=0.01, n_iter=20) :
-        self.learning_rate = learning_rate
-        self.n_iter = n_iter
-        self.activation_function = step_function
-        self.weights = None
-    
-    def fit(self, X, y):
-        n_samples, n_features = X.shape
+def train(X, y, eta=0.01, n_iter=10):
+    n_samples, n_features = X.shape
+    weights = initialize_weights(n_features)
 
-        # initialize parameters
-        self.weights = np.random.randn(n_features)
-        self.errors_ = []
+    for _ in range(n_iter):
+        errors = 0
+        for xi, target in zip(X, y):
+            update = eta * (target - predict(weights, xi)) 
+            weights += update * xi
+            errors += int(update != 0.0)
 
-        y_ = np.where(y > 0, 1, -1)
+    return weights
 
-        for _ in range(self.n_iter):
-            
-            for idx, x_i in enumerate(X):
-                linear_output = np.dot(x_i, self.weights)
-                y_predicted = self.activation_function(linear_output)
+'''linearly seperable data'''
+# Define features X1 and X2 for two classes
+class1_X1 = np.array([2.5, 1.5, 3.5, 3.0, 1.0])
+class1_X2 = np.array([3.0, 2.0, 4.0, 3.5, 1.5])
 
-                #perceptron update rule
-                update = self.learning_rate * (y_[idx] - y_predicted)
-                self.weights += update * x_i
+class2_X1 = np.array([-2.0, -3.0, -2.5, -1.5, -1.0])
+class2_X2 = np.array([-2.5, -3.5, -2.0, -1.0, -1.5])
 
-               
-        return self
+# Create the dataset
+X1 = np.concatenate((class1_X1, class2_X1))
+X2 = np.concatenate((class1_X2, class2_X2))
+X = np.column_stack((X1, X2))
 
-    def predict(self, X):
-        linear_output = np.dot(X, self.weights)
-        y_predicted = self.activation_function(linear_output)
-        return y_predicted
-    
+# Create the target labels (1 for class 1, -1 for class 2)
+y = np.array([1, 1, 1, 1, 1, -1, -1, -1, -1, -1])
 
 
-# Testing
-def accuracy(y_true, y_pred):
-    accuracy = np.sum(y_true == y_pred) / len(y_true)
-    return accuracy
+perceptron_weights = train(X, y, eta=0.01, n_iter=10)
 
-df = pd.read_csv('linearlyseperable.csv')
-print(df.to_string())
-print(df.columns)
+plt.scatter(class1_X1, class1_X2, label='Class 1', marker='o', c='blue')
+plt.scatter(class2_X1, class2_X2, label='Class 2', marker='x', c='red')
 
+# Plot the decision boundary
+x_line = np.linspace(-4, 4, 100)
+y_line = (-perceptron_weights[1] / perceptron_weights[0]) * x_line
+plt.plot(x_line, y_line, '-g', label='Decision Boundary')
 
-df['Classlabel'] = np.where(df['Classlabel'] == 'Adult', -1, 1)
-
-# Select 'Height' and 'Weight' as features (X) and 'Classlabel' as labels (y)
-X = df[['Height', 'Weight']].values
-y = df['Classlabel'].values
-
-# Create a scatter plot for 'Adult' data points (red circles)
-plt.scatter(X[y == -1, 0], X[y == -1, 1], color='red', marker='o', label='Adult')
-
-# Create a scatter plot for 'Child' data points (blue crosses)
-plt.scatter(X[y == 1, 0], X[y == 1, 1], color='blue', marker='x', label='Child')
-
-# Set labels for the x and y axes
-plt.xlabel('Height')
-plt.ylabel('Weight')
-
-# Add a legend to the plot in the upper-left corner
-plt.legend(loc='upper left')
-
-# Display the scatter plot
+plt.xlabel('X1')
+plt.ylabel('X2')
+plt.legend(loc='best')
+plt.title('Perceptron Decision Boundary')
+plt.grid(True)
 plt.show()
 
-perceptron = Perceptron(learning_rate=0.0001, n_iter=10)
+# Make predictions on the training set
+predictions = predict(perceptron_weights, X)
 
-perceptron.fit(X, y)
+# Calculate accuracy
+accuracy = np.mean(predictions == y) * 100
+print(f"Accuracy on the training set: {accuracy:.2f}%")
 
-predictions = perceptron.predict(X)
+'''non linearly seperable data'''
 
-plt.plot(range(1, len(perceptron.errors_) + 1), perceptron.errors_, marker='o')
+# Define features X1 and X2 for two classes
+class1_X1 = np.array([2.5, 1.5, 3.5, 3.0, 1.0])
+class1_X2 = np.array([3.0, 2.0, 4.0, 3.5, 1.5])
+
+class2_X1 = np.array([-2.0, -3.0, -2.5, -1.5, -1.0, 1.5, 0.5, 2.0, 2.5])
+class2_X2 = np.array([-2.5, -3.5, -2.0, -1.0, -1.5, 0.5, 1.5, 1.0, 3.0])
+
+# Create the dataset
+X1 = np.concatenate((class1_X1, class2_X1))
+X2 = np.concatenate((class1_X2, class2_X2))
+X = np.column_stack((X1, X2))
+
+# Create the target labels (1 for class 1, -1 for class 2)
+y = np.array([1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1])
+
+# Train the perceptron
+perceptron_weights = train(X, y, eta=0.01, n_iter=100)
+
+# Plot the number of errors in each epoch
+plt.plot(range(1, len(perceptron_weights.errors_) + 1), perceptron_weights.errors_, marker='o')
 plt.xlabel('Epochs')
-plt.ylabel('Number of misclassifications')
-plt.show()
-
-fig = plt.figure()
-ax = fig.add_subplot(1, 1, 1)
-plt.scatter(X[:, 0], X[:, 1], marker="o", c=y)
-
-x0_1 = np.amin(X[:, 0])
-x0_2 = np.amax(X[:, 0])
-
-x1_1 = (-perceptron.weights[0] * x0_1) / perceptron.weights[1]
-x1_2 = (-perceptron.weights[0] * x0_2) / perceptron.weights[1]
-
-ax.plot([x0_1, x0_2], [x1_1, x1_2], "k")
-
-ymin = np.amin(X[:, 1])
-ymax = np.amax(X[:, 1])
-ax.set_ylim([ymin - 3, ymax + 3])
-
+plt.ylabel('Number of Errors')
+plt.title('Perceptron Convergence')
+plt.grid(True)
 plt.show()
