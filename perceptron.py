@@ -80,7 +80,7 @@ X = np.column_stack((X1, X2))
 y = np.array([1, 1, 1, 1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1])
 
 # Train the perceptron
-perceptron_weights, error_count = train(X, y, eta=0.01, n_iter=20)
+perceptron_weights, error_count = train(X, y, eta=0.01, n_iter=30)
 
 # Plot the number of errors in each epoch
 plt.plot(range(1, len(error_count) + 1), error_count, marker='o')
@@ -96,3 +96,11 @@ predictions = predict(perceptron_weights, X)
 # Calculate accuracy
 accuracy = np.mean(predictions == y) * 100
 print(f"Accuracy on the training set(Non-Linearly Seperable): {accuracy:.2f}%")
+
+
+'''
+naomigreenberg@naomis-MacBook-Air COMP_379_HW1 % /usr/local/bin/python3 /Users/naomigreenberg/Workspace/COMP_379_HW1/p
+erceptron.py
+Accuracy on the training set(Linearly Seperable): 100.00%
+Accuracy on the training set(Non-Linearly Seperable): 45.00%
+'''
