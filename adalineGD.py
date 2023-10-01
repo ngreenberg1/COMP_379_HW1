@@ -31,7 +31,7 @@ class AdalineGD(object):
         self.eta = eta
         self.n_iter = n_iter
 
-    def fit(self, X, y):
+    def fit(self, X, y, lambda_=0.01):
         """ Fit training data.
         Parameters
         ----------
@@ -46,7 +46,7 @@ class AdalineGD(object):
         self : object
 
         """
-        self.w_ = np.zeros(1 + X.shape[1])
+        self.w_ = np.random.randn(1 + X.shape[1])
         self.cost_ = []
 
         cost = 0.0 
@@ -58,9 +58,9 @@ class AdalineGD(object):
             print(f"Iteration {i + 1}: Cost = {cost}") #for debugging purposes
             print(f"Iteration {i + 1}: weights = {self.w_}")
 
-            self.w_[1:] += self.eta * X.T.dot(errors)
+            self.w_[1:] += self.eta * (X.T.dot(errors) - lambda_ * self.w_[1:])  
             self.w_[0] += self.eta * errors.sum()
-            cost = (errors**2).sum() / 2.0
+            cost = (errors**2).sum() / 2.0+ lambda_ * (self.w_[1:]**2).sum() 
             self.cost_.append(cost)
         return self
         
@@ -101,13 +101,12 @@ def preprocess_data(df):
 
     # Encode categorical variables (e.g., 'Sex' and 'Embarked'
 
-    #X['Sex'] = label_encoder.fit_transform(X['Sex'])
-
     # One-hot encode the 'Sex' column
     X['IsFemale'] = (X['Sex'] == 'female').astype(int)
     X.drop(columns=['Sex'], inplace=True)
     
     print(X)
+    
 
     scaler = StandardScaler()
     X = scaler.fit_transform(X)
@@ -125,8 +124,8 @@ X, y = preprocess_data(data)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
 
-adaline = AdalineGD(eta=0.001, n_iter=10)
-adaline.fit(X_train, y_train)
+adaline = AdalineGD(eta=0.009, n_iter=50)    #eta 0.009, n_iter 20
+adaline.fit(X_train, y_train, lambda_=0.01)
 
 y_train_pred = adaline.predict(X_train)
 y_test_pred = adaline.predict(X_test)
@@ -139,4 +138,6 @@ print(f"Accuracy on test data: {accuracy_test * 100:.2f}%")
 
 
 print(y_test_pred)
+
+
 

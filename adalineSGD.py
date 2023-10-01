@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
 class AdalineSGD(object):
     """ADAptive LInear NEuron classifier with Stochastic Gradient Descent.
@@ -50,14 +50,12 @@ class AdalineSGD(object):
         for _ in range(self.n_iter):
             X, y = self._shuffle(X, y)
             cost = []
-            print(self.w_)
 
             for xi, target in zip(X, y):
                 cost.append(self._update_weights(xi, target))
+            
             avg_cost = sum(cost) / len(y)
             self.cost_.append(avg_cost)
-
-
 
         return self
 
@@ -103,7 +101,7 @@ class AdalineSGD(object):
 
     def predict(self, X):
         """Return class label after unit step."""
-        return np.where(self.activation(X) >= 0, 1, -1)
+        return np.where(self.activation(X) >= 0, 1, 0)
     
 
 
@@ -123,7 +121,6 @@ def preprocess_data(df):
     X['IsFemale'] = (X['Sex'] == 'female').astype(int)
     X.drop(columns=['Sex'], inplace=True)
     
-    print(X)
     return X, y
 
 X, y = preprocess_data(data)
@@ -134,9 +131,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 
 
 # Create an instance of AdalineSGD
-adaline = AdalineSGD(eta=0.000001, n_iter=30, random_state=1)
-
-# Train the model on the training data
+adaline = AdalineSGD(eta=0.0001, n_iter=13, random_state=1)  
+# Train the model on the training data                      
 adaline.fit(X_train.values, y_train.values)
 
 # Evaluate the model on training data
@@ -147,7 +143,6 @@ train_accuracy = (train_predictions == y_train.values).mean()
 test_predictions = adaline.predict(X_test.values)
 test_accuracy = (test_predictions == y_test.values).mean()
 
-print(test_predictions)
 
 print(f"Accuracy on training data: {train_accuracy * 100:.2f}%")
 print(f"Accuracy on testing data: {test_accuracy * 100:.2f}%")
@@ -155,16 +150,29 @@ print(f"Accuracy on testing data: {test_accuracy * 100:.2f}%")
 
 # Access the feature weights
 feature_weights = adaline.w_[1:]
-print(feature_weights)
+
+sum_abs_weights = np.sum(np.abs(feature_weights))
 
 # Normalize the feature weights
-normalized_weights = (feature_weights - feature_weights.min()) / (feature_weights.max() - feature_weights.min())
+normalized_weights = (feature_weights / sum_abs_weights)
 
 # Create a DataFrame to store the feature names and their normalized weights
 feature_importance_df = pd.DataFrame({'Feature': X.columns, 'Normalized Weight': normalized_weights})
 
 # Sort the features by normalized weight in descending order to see the most predictive features
-sorted_feature_importance = feature_importance_df.sort_values(by='Normalized Weight', ascending=False)
+sorted_feature_importance = feature_importance_df.assign(Abs_Normalized_Weight=abs(normalized_weights)).sort_values(by='Abs_Normalized_Weight', ascending=False)
+
+sorted_feature_importance.drop(columns=['Abs_Normalized_Weight'], inplace=True)
 
 # Print or visualize the sorted feature importances
 print(sorted_feature_importance)
+
+
+''' test accuracy of baseline model'''
+random_adaline = AdalineSGD(eta=0.0001, n_iter=13, random_state=1)
+random_adaline._initialize_weights(X_train.shape[1])
+
+random_predictions = random_adaline.predict(X_test.values)
+
+random_accuracy = (random_predictions == y_test.values).mean()
+print(f"Accuracy on testing data with random weights: {random_accuracy * 100:.2f}%")
